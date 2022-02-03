@@ -1,0 +1,2 @@
+# bicep
+azure bicep env
