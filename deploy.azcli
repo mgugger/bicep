@@ -1,0 +1,25 @@
+baseline='mdgcorp'
+location='switzerlandnorth'
+pubkeydata=$(cat ~/.ssh/id_rsa.pub)
+local_public_ip=$(curl ifconfig.me)
+vm_admin_name=$(whoami)
+user_object_id=$(az account show | jq -r .id)
+
+# Create / Update the deployment (replace AAD Group ID)
+az deployment sub create -n "$baseline-main" -l $location -f main.bicep \
+    --parameters baseName=$baseline \
+    --parameters pubkeydata="$pubkeydata" \
+    --parameters local_public_ip="$local_public_ip" \
+    --parameters vm_admin_name="$vm_admin_name" \
+    --parameters user_object_id="$user_object_id" \
+    --parameters aadGroupdIds='["e822cf30-7f5e-4968-a215-5cc48d538580"]'
+
+# Attach ACR, grab the ACR name
+#az aks update -n $baseline'aks' -g $baseline --attach-acr 'el66c3427w4aeacr'
+
+# Get AKS Credentials
+#az aks get-credentials -n $baseline'aks' -g $baseline --public
+
+# Cleanup. Delete the RG and Deployment
+# az group delete -g $baseline -y
+# az deployment sub delete -n "$baseline"
