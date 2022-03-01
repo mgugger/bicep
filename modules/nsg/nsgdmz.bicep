@@ -35,20 +35,21 @@ resource nsgdmz 'Microsoft.Network/networkSecurityGroups@2020-07-01' = {
           direction: 'Inbound'
         }
       }
-      {
-        name: 'allow_ssh_local'
-        properties: {
-          description: 'Allow ssh from current local ip'
-          protocol: 'Tcp'
-          sourcePortRange: '*'
-          destinationPortRange: '22'
-          sourceAddressPrefix: local_public_ip
-          destinationAddressPrefix: 'VirtualNetwork'
-          access: 'Allow'
-          priority: 115
-          direction: 'Inbound'
-        }
-      }
+      // Disallow SSH once wireguard is in place and use JIT
+      // {
+      //   name: 'allow_ssh_local'
+      //   properties: {
+      //     description: 'Allow ssh from current local ip'
+      //     protocol: 'Tcp'
+      //     sourcePortRange: '*'
+      //     destinationPortRange: '22'
+      //     sourceAddressPrefix: local_public_ip
+      //     destinationAddressPrefix: 'VirtualNetwork'
+      //     access: 'Allow'
+      //     priority: 115
+      //     direction: 'Inbound'
+      //   }
+      // }
       {
         name: 'deny_catchall'
         properties: {

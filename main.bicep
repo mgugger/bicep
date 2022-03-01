@@ -72,6 +72,7 @@ module vnetsandbox 'modules/vnet/vnet.bicep' = {
       {
         properties: {
           addressPrefix: '10.0.235.32/27'
+          privateEndpointNetworkPolicies: 'Disabled'
           networkSecurityGroup: {
             id: nsginternal.outputs.nsginternalId
           }
@@ -155,6 +156,29 @@ module akslaworkspace 'modules/laworkspace/la.bicep' = {
   ]
 }
 
+module privatednsBlobWindowsCoreNet 'modules/vnet/privatednszone.bicep' = {
+  scope: resourceGroup(rg.name)
+  name: 'privatednsBlobWindowsCoreNet'
+  params: {
+    privateDNSZoneName: 'privatelink.blob.core.windows.net'
+  }
+  dependsOn: [
+    rg
+  ]
+}
+
+module privatednsBlobWindowsCoreNetLink 'modules/vnet/privatdnslink.bicep' = {
+  scope: resourceGroup(rg.name)
+  name: 'privatednsBlobWindowsCoreNetLink'
+  params: {
+    privateDnsZoneName: privatednsBlobWindowsCoreNet.outputs.privateDNSZoneName
+    vnetId: vnetsandbox.outputs.vnetId
+  }
+  dependsOn: [
+    rg
+  ]
+}
+
 module privatednsAKSZone 'modules/vnet/privatednszone.bicep' = {
   scope: resourceGroup(rg.name)
   name: 'privatednsAKSZone'
@@ -223,6 +247,8 @@ module synapsedeploy 'modules/synapse/workspace.bicep' = {
     sqlAdministratorLogin: vm_admin_name
     sqlAdministratorLoginPassword: '${toLower(replace(uniqueString(subscription().id, rg.outputs.rgId), '-', ''))}#1A!'
     blobName: '${baseName}sta'
+    privateLinkSnetId: vnetsandbox.outputs.vnetSubnets[1].id
+    privateDnsZoneId: privatednsBlobWindowsCoreNet.outputs.privateDNSZoneId
     storageAccountType: 'Standard_LRS'
     sqlpoolName: '${baseName}sqlpool'
     bigDataPoolName: '${baseName}bdpool'

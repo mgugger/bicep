@@ -14,7 +14,8 @@ param collation string
 param startIpaddress string
 param endIpAddress string
 param userObjectId string
-
+param privateLinkSnetId string
+param privateDnsZoneId string
 
 var storageBlobDataContributorRoleID = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 var storageRoleUniqueId = guid(resourceId('Microsoft.Storage/storageAccounts', synapseName), blobName)
@@ -29,6 +30,41 @@ resource datalakegen2 'Microsoft.Storage/storageAccounts@2021-02-01' = {
   }
   sku: {
     name: storageAccountType
+  }
+}
+
+resource privateEndpoint 'Microsoft.Network/privateEndpoints@2020-06-01' = {
+  name: '${blobName}-plink'
+  location: location
+  properties: {
+    subnet: {
+      id: privateLinkSnetId
+    }
+    privateLinkServiceConnections: [
+      {
+        name: '${blobName}-plink'
+        properties: {
+          privateLinkServiceId: datalakegen2.id
+          groupIds: [
+            'blob'
+          ]
+        }
+      }
+    ]
+  }
+}
+
+resource privateDNSZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-06-01' = {
+  name: '${privateEndpoint.name}/default'
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: 'privatelink-blob-core-windows-net'
+        properties: {
+          privateDnsZoneId: privateDnsZoneId
+        }
+      }
+    ]
   }
 }
 
@@ -143,3 +179,4 @@ resource symbolicname 'Microsoft.Synapse/workspaces/firewallRules@2021-03-01' = 
   }
   parent: synapse
 }
+
