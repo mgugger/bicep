@@ -20,17 +20,26 @@ param privateDnsZoneId string
 var storageBlobDataContributorRoleID = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 var storageRoleUniqueId = guid(resourceId('Microsoft.Storage/storageAccounts', synapseName), blobName)
 var storageRoleUserUniqueId = guid(resourceId('Microsoft.Storage/storageAccounts', synapseName), userObjectId)
-resource datalakegen2 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+resource datalakegen2 'Microsoft.Storage/storageAccounts@2021-08-01' = {
   name: blobName
   kind: 'StorageV2'
   location: location
   properties:{
     minimumTlsVersion: 'TLS1_2'
     isHnsEnabled: true
+    supportsHttpsTrafficOnly: true
+    defaultToOAuthAuthentication: false
+    allowCrossTenantReplication: false
+    publicNetworkAccess: 'Disabled'
+    networkAcls: {
+      defaultAction: 'Deny'
+      virtualNetworkRules: []
   }
+}
   sku: {
     name: storageAccountType
   }
+  
 }
 
 resource privateEndpoint 'Microsoft.Network/privateEndpoints@2020-06-01' = {
@@ -69,7 +78,7 @@ resource privateDNSZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneG
 }
 
 resource blob 'Microsoft.Storage/storageAccounts/blobServices@2021-02-01' = {
-  name:  '${datalakegen2.name}/default'
+  name: '${datalakegen2.name}/default'
 }
 
 resource containera 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-02-01' = {
@@ -77,10 +86,10 @@ resource containera 'Microsoft.Storage/storageAccounts/blobServices/containers@2
   properties: {
     publicAccess: 'None'
   }
-  dependsOn:[
+  dependsOn: [
     blob
   ]
-} 
+}
 
 resource synapse 'Microsoft.Synapse/workspaces@2021-03-01' = {
   name: synapseName
@@ -89,20 +98,20 @@ resource synapse 'Microsoft.Synapse/workspaces@2021-03-01' = {
     sqlAdministratorLogin: sqlAdministratorLogin
     sqlAdministratorLoginPassword: sqlAdministratorLoginPassword
     managedVirtualNetwork: 'default'
-    defaultDataLakeStorage:{
+    defaultDataLakeStorage: {
       accountUrl: 'https://${datalakegen2.name}.dfs.core.windows.net'
       filesystem: defaultDataLakeStorageFilesystemName
     }
   }
-  identity:{
-    type:'SystemAssigned'
+  identity: {
+    type: 'SystemAssigned'
   }
 }
 
 resource synapseroleassing 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   name: storageRoleUniqueId
   scope: datalakegen2
-  properties:{
+  properties: {
     principalId: synapse.identity.principalId
     principalType: 'ServicePrincipal'
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleID)
@@ -112,7 +121,7 @@ resource synapseroleassing 'Microsoft.Authorization/roleAssignments@2020-04-01-p
 resource userroleassing 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   name: storageRoleUserUniqueId
   scope: datalakegen2
-  properties:{
+  properties: {
     principalId: userObjectId
     principalType: 'User'
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleID)
@@ -123,20 +132,20 @@ resource manageid4Pipeline 'Microsoft.Synapse/workspaces/managedIdentitySqlContr
   name: 'default'
   properties: {
     grantSqlControlToManagedIdentity: {
-      desiredState:'Enabled'
+      desiredState: 'Enabled'
     }
   }
-  parent:synapse
+  parent: synapse
 }
 
 resource sqlpool 'Microsoft.Synapse/workspaces/sqlPools@2021-03-01' = {
   name: sqlpoolName
   location: location
   parent: synapse
-  sku:{
+  sku: {
     name: 'DW100c'
   }
-  properties:{
+  properties: {
     collation: collation
     createMode: 'Default'
   }
@@ -146,15 +155,15 @@ resource sparkpool 'Microsoft.Synapse/workspaces/bigDataPools@2021-03-01' = {
   name: bigDataPoolName
   location: location
   parent: synapse
-  properties:{
+  properties: {
     nodeSize: nodeSize
     nodeSizeFamily: 'MemoryOptimized'
-    autoScale:{
+    autoScale: {
       enabled: true
       minNodeCount: sparkPoolMinNodeCount
       maxNodeCount: sparkPoolMaxNodeCount
     }
-    autoPause:{
+    autoPause: {
       enabled: true
       delayInMinutes: 15
     }
@@ -179,4 +188,3 @@ resource symbolicname 'Microsoft.Synapse/workspaces/firewallRules@2021-03-01' = 
   }
   parent: synapse
 }
-

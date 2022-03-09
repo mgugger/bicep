@@ -8,6 +8,12 @@ param pubkeydata string
 param vm_admin_name string
 param user_object_id string
 
+// Security Center
+module security_center 'modules/security_center/security_center.bicep' = {
+  name: 'security_center'
+  params: {}
+}
+
 // Resource Groups
 var rgName = baseName
 module rg 'modules/resource-group/rg.bicep' = {
